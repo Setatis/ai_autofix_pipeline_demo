@@ -501,6 +501,18 @@ class Calculator:
 
 
 if __name__ == '__main__':
+    # 启动时自动重置为有Bug的版本
+    import shutil
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    original_file = os.path.join(script_dir, 'test_app', 'calculator_original.py')
+    target_file = os.path.join(script_dir, 'test_app', 'calculator.py')
+    
+    if os.path.exists(original_file):
+        shutil.copy2(original_file, target_file)
+        print("[OK] 已重置 calculator.py 为原始有Bug版本")
+    else:
+        print("[警告] 未找到 calculator_original.py，使用当前版本")
+    
     print("=" * 60)
     print("[AI] AI Auto-Fix Pipeline Web Server")
     print("=" * 60)
