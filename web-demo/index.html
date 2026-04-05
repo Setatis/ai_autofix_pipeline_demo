@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Auto-Fix Pipeline Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .connection-status {
+            margin-top: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+
+        .connection-status.connected {
+            background: rgba(40, 167, 69, 0.3);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(220, 53, 69, 0.3);
+        }
+
+        .controls {
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-demo:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-reset {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-reset:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .pipeline-steps {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #dee2e6;
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .step.active {
+            border-left-color: #667eea;
+            background: #f0f4ff;
+            animation: pulse 2s infinite;
+        }
+
+        .step.success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .step.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .step.success .step-number {
+            background: #28a745;
+        }
+
+        .step.error .step-number {
+            background: #dc3545;
+        }
+
+        .step-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .step-content {
+            margin-left: 40px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log .success {
+            color: #4ec9b0;
+        }
+
+        .log .error {
+            color: #f44747;
+        }
+
+        .log .info {
+            color: #569cd6;
+        }
+
+        .log .warning {
+            color: #dcdcaa;
+        }
+
+        .status-bar {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+        }
+
+        .status-indicator.running {
+            background: #ffc107;
+            animation: blink 1s infinite;
+        }
+
+        .status-indicator.success {
+            background: #28a745;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI Auto-Fix Pipeline</h1>
+            <p>智能体自动修复系统 - SITP项目Demo</p>
+            <div id="connectionStatus" class="connection-status disconnected">
+                未连接后端
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-demo" id="demoBtn" onclick="startDemo()">
+                <span>|></span>
+                <span>开始演示</span>
+            </button>
+            <button class="btn btn-reset" id="resetBtn" onclick="resetDemo()">
+                <span>Reset</span>
+                <span>重置</span>
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="bugsFound">0</div>
+                    <div class="stat-label">发现Bug</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bugsFixed">0</div>
+                    <div class="stat-label">已修复</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="passRate">0%</div>
+                    <div class="stat-label">测试通过率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="deployStatus">-</div>
+                    <div class="stat-label">部署状态</div>
+                </div>
+            </div>
+
+            <div class="pipeline-steps" id="pipelineSteps">
+                <div class="step" id="step1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">监控检测</div>
+                    </div>
+                    <div class="step-content">运行测试套件，检测失败的测试用例</div>
+                </div>
+
+                <div class="step" id="step2">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">问题提交</div>
+                    </div>
+                    <div class="step-content">自动生成Bug Issue，包含错误信息和严重程度</div>
+                </div>
+
+                <div class="step" id="step3">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">AI分析</div>
+                    </div>
+                    <div class="step-content">大模型分析错误日志和源代码，定位Bug根因</div>
+                </div>
+
+                <div class="step" id="step4">
+                    <div class="step-header">
+                        <div class="step-number">4</div>
+                        <div class="step-title">AI修复</div>
+                    </div>
+                    <div class="step-content">生成修复代码并自动应用，包含文件备份</div>
+                </div>
+
+                <div class="step" id="step5">
+                    <div class="step-header">
+                        <div class="step-number">5</div>
+                        <div class="step-title">自动部署</div>
+                    </div>
+                    <div class="step-content">验证文件完整性、语法检查、导入测试、版本标记</div>
+                </div>
+
+                <div class="step" id="step6">
+                    <div class="step-header">
+                        <div class="step-number">6</div>
+                        <div class="step-title">验证测试</div>
+                    </div>
+                    <div class="step-content">运行测试验证修复是否成功</div>
+                </div>
+
+                <div class="step" id="step7">
+                    <div class="step-header">
+                        <div class="step-number">7</div>
+                        <div class="step-title">生成报告</div>
+                    </div>
+                    <div class="step-content">输出详细的Markdown修复报告</div>
+                </div>
+            </div>
+
+            <div class="log" id="log">[AI] AI Auto-Fix Pipeline - 等待启动...
+点击"开始演示"按钮运行完整流程
+</div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">准备就绪</span>
+            </div>
+            <div id="timestamp"></div>
+        </div>
+    </div>
+
+    <script>
+        // API 基础地址 - 开发时使用本地地址
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : window.location.origin;
+        
+        let isRunning = false;
+        let eventSource = null;
+
+        // 初始化时检查后端连接
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(3000)
+                });
+                if (response.ok) {
+                    document.getElementById('connectionStatus').className = 'connection-status connected';
+                    document.getElementById('connectionStatus').textContent = '后端已连接';
+                    return true;
+                }
+            } catch (e) {
+                document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                document.getElementById('connectionStatus').textContent = '后端未连接 - 请先启动 web_api.py';
+            }
+            return false;
+        }
+
+        // 添加日志
+        function addLog(text, type = 'info') {
+            const log = document.getElementById('log');
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = text;
+            log.appendChild(line);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // 更新步骤状态
+        function updateStep(stepNum, status) {
+            const step = document.getElementById(`step${stepNum}`);
+            if (step) {
+                step.classList.remove('active', 'success', 'error');
+                if (status) {
+                    step.classList.add(status);
+                }
+            }
+        }
+
+        // 更新统计数据
+        function updateStats(stats) {
+            if (stats.bugsFound !== undefined) {
+                document.getElementById('bugsFound').textContent = stats.bugsFound;
+            }
+            if (stats.bugsFixed !== undefined) {
+                document.getElementById('bugsFixed').textContent = stats.bugsFixed;
+            }
+            if (stats.passRate !== undefined) {
+                document.getElementById('passRate').textContent = stats.passRate;
+            }
+            if (stats.deployStatus !== undefined) {
+                document.getElementById('deployStatus').textContent = stats.deployStatus;
+            }
+        }
+
+        // 设置状态
+        function setStatus(text, status) {
+            document.getElementById('statusText').textContent = text;
+            const indicator = document.getElementById('statusIndicator');
+            indicator.className = 'status-indicator ' + status;
+        }
+
+        // 启动 SSE 流
+        function startEventStream() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`${API_BASE}/api/stream`);
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'done') {
+                        setStatus('演示完成', 'success');
+                        document.getElementById('demoBtn').disabled = false;
+                        isRunning = false;
+                        document.getElementById('timestamp').textContent = new Date().toLocaleString('zh-CN');
+                        eventSource.close();
+                        return;
+                    }
+                    
+                    if (data.type === 'stats') {
+                        updateStats(data.data);
+                    } else if (data.type === 'step') {
+                        updateStep(data.step, data.status);
+                    } else if (data.text) {
+                        // 日志消息
+                        addLog(data.text, data.type || 'info');
+                    }
+                } catch (e) {
+                    console.log('Parse error:', e);
+                }
+            };
+
+            eventSource.onerror = function(e) {
+                console.log('SSE error:', e);
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    setStatus('连接已关闭', '');
+                }
+            };
+        }
+
+        // 开始演示
+        async function startDemo() {
+            if (isRunning) return;
+            
+            // 检查连接
+            const connected = await checkConnection();
+            if (!connected) {
+                alert('请先启动后端服务:\n\n' +
+                      'cd ai_autofix_pipeline\n' +
+                      'python web_api.py');
+                return;
+            }
+            
+            isRunning = true;
+            document.getElementById('demoBtn').disabled = true;
+            document.getElementById('log').innerHTML = '';
+            
+            // 重置所有步骤
+            for (let i = 1; i <= 7; i++) {
+                updateStep(i, '');
+            }
+            
+            setStatus('演示运行中...', 'running');
+            
+            // 启动 SSE
+            startEventStream();
+            
+            // 调用启动 API
+            try {
+                const response = await fetch(`${API_BASE}/api/start`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.error) {
+                    addLog('错误: ' + result.error, 'error');
+                    setStatus('错误', 'error');
+                    document.getElementById('demoBtn').disabled = false;
+                    isRunning = false;
+                } else {
+                    addLog('[AI] Pipeline 已启动...', 'info');
+                }
+            } catch (e) {
+                addLog('启动失败: ' + e.message, 'error');
+                setStatus('启动失败', 'error');
+                document.getElementById('demoBtn').disabled = false;
+                isRunning = false;
+            }
+        }
+
+        // 重置
+        async function resetDemo() {
+            if (isRunning) return;
+            
+            // 检查连接
+            const connected = await checkConnection();
+            if (!connected) {
+                // 本地重置
+                resetLocal();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/reset`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.error) {
+                    alert(result.error);
+                    return;
+                }
+                
+                resetLocal();
+                addLog('[AI] Pipeline 已重置，测试文件已恢复到初始状态', 'info');
+            } catch (e) {
+                resetLocal();
+            }
+        }
+
+        function resetLocal() {
+            isRunning = false;
+            document.getElementById('demoBtn').disabled = false;
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('bugsFound').textContent = '0';
+            document.getElementById('bugsFixed').textContent = '0';
+            document.getElementById('passRate').textContent = '0%';
+            document.getElementById('deployStatus').textContent = '-';
+            document.getElementById('timestamp').textContent = '';
+            setStatus('准备就绪', '');
+            
+            for (let i = 1; i <= 7; i++) {
+                updateStep(i, '');
+            }
+            
+            addLog('[AI] AI Auto-Fix Pipeline - 等待启动...', 'info');
+            addLog('点击"开始演示"按钮运行完整流程', 'info');
+        }
+
+        // 页面加载时检查连接
+        window.onload = function() {
+            checkConnection();
+            resetLocal();
+        };
+    </script>
+</body>
+</html>

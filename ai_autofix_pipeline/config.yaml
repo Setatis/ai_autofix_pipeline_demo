@@ -1,0 +1,27 @@
+# AI Auto-Fix Pipeline 配置
+
+api:
+  provider: "siliconflow"  # openai, deepseek, zhipuai, siliconflow 等
+  model: "Pro/zai-org/GLM-5"  # 或 "gpt-3.5-turbo"
+  api_key: "your-api-key-here"  # 从环境变量读取或替换为你的 API Key
+  base_url: "https://api.siliconflow.cn/v1"  # API端点
+  temperature: 0.2  # 较低温度以保证修复代码的确定性
+  max_tokens: 2000
+
+pipeline:
+  max_retries: 3  # 最大重试次数
+  timeout_seconds: 300  # 单步超时时间
+  auto_commit: true  # 自动提交修复
+  auto_deploy: true  # 自动部署
+  run_tests: true  # 运行测试验证
+
+logging:
+  level: "INFO"
+  log_dir: "logs"
+  save_api_calls: true  # 保存API调用记录用于调试
+
+report:
+  output_dir: "reports"
+  format: "markdown"  # markdown, html, json
+  include_code_diff: true
+  include_api_calls: false
