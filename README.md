@@ -38,7 +38,7 @@ api:
   api_key: "your-api-key-here"      # 替换为你的 API Key
   base_url: "https://api.siliconflow.cn/v1"
   temperature: 0.2
-  max_tokens: 2000
+  max_tokens: 4000
 ```
 
 ### 运行演示
