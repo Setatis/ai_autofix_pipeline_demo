@@ -1,7 +1,6 @@
 
-
 """
-计算器应用 - Bug已修复
+计算器应用 - 包含一个预设Bug用于演示
 """
 
 class Calculator:
@@ -20,17 +19,7 @@ class Calculator:
         return a * b
     
     def divide(self, a, b):
-        """
-        除法 - 已修复除零Bug并添加输入验证
-        """
-        # 修复: 添加输入验证，确保参数为数字类型
-        self.validate_input(a)
-        self.validate_input(b)
-        
-        # 修复: 添加除零检查，防止ZeroDivisionError
-        if b == 0:
-            raise ValueError("Cannot divide by zero")
-        
+        """除法 - Bug: 没有处理除零情况"""
         return a / b
     
     def power(self, base, exponent):
@@ -57,4 +46,3 @@ class Calculator:
         if not isinstance(value, (int, float)):
             raise ValueError("Input must be a number")
         return True
-
